@@ -1,0 +1,49 @@
+/* Loan Journey — step visibility & layout (Tier 1 capstone) */
+
+.step-section {
+  display: none;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.step-section.active {
+  display: block;
+}
+
+.step-section h1,
+.step-section h2 {
+  margin-top: 0;
+}
+
+.field-wrapper[data-visible="false"] {
+  display: none;
+}
+
+.field-wrapper.journey-error {
+  color: #b3261e;
+  font-weight: 600;
+  padding: 0.5rem 0;
+}
+
+.field-wrapper.journey-info {
+  color: #0f5132;
+  background: #d1e7dd;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+}
+
+.preview-summary-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.preview-summary-list li {
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+#step-thankyou {
+  text-align: center;
+}

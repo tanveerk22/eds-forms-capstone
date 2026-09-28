@@ -1,5 +1,29 @@
-# Your Project's Title...
-Your project's description...
+# EDS Forms Capstone — Personal Loan Journey (Tier 1)
+
+A Personal Loan application journey (OTP login → pre-approved offer → EMI
+calculator → preview → submission) built on Adobe's AEM Forms Edge Delivery
+Services (EDS) boilerplate, using **doc-based (sheet) Adaptive Forms** and
+reusable EDS fragments. See [`DELIVERABLES.md`](./DELIVERABLES.md) for the
+full capstone submission write-up (API/FDM summary, EMI explanation,
+analytics events, known limitations).
+
+## Quick Start
+```sh
+npm install
+npx aem up
+```
+Open `http://localhost:3000/` and click **Apply Now**. Use mobile
+`9876543210`, any DOB, and OTP `123456` for the happy path. Mobile numbers
+starting with `0` simulate a "no offer" failure; any OTP other than
+`123456` simulates an invalid-OTP failure.
+
+## Project Layout
+- `index.html` — the 5-step journey shell (Welcome / Login / Offer / Preview / Thank You)
+- `fragments/*.plain.html` — reusable EDS fragments, each backed by its own doc-based Adaptive Form
+- `forms/*.json` — doc-based (sheet) Adaptive Form field definitions (see `tools/gen/build-form-sheets.mjs` to regenerate)
+- `scripts/loan-journey.js` — step controller, EMI calculation, field visibility
+- `scripts/mock-api.js` — mocked InitiateCustomerIdentification / VerifyOTPAndGetDemogDetails / submission APIs
+- `styles/loan-journey.css` — journey-specific styling
 
 ## Environments
 - Preview: https://main--aem-boilerplate-forms--adobe-rnd.aem.page/
