@@ -20,6 +20,35 @@ Forms EDS **doc-based (sheet) Adaptive Form** engine:
 
 Run locally with `npm i && npx aem up`, then open `http://localhost:3000/`.
 
+## 1a. Document Authoring (da.live)
+All 9 content documents (the journey page, 3 fragments, header, footer, and
+the 3 doc-based sheet JSONs) are also authored/pushed as real documents in
+**Document Authoring (DA / da.live)**, browsable and editable at
+`https://da.live/#/tanveerk22/eds-forms-capstone`:
+
+```
+/index.html, /nav.html, /footer.html
+/fragments/otp-login.html, /fragments/offer-display.html, /fragments/preview.html
+/forms/otp-login.json, /forms/offer-display.json, /forms/preview.json
+```
+
+`fstab.yaml` declares the content-source mountpoint
+(`https://content.da.live/tanveerk22/eds-forms-capstone/`) that a real
+cloud-delivered EDS site would fetch this content from. These were pushed
+using the AEM CLI's DA workflow: `aem content clone/add/commit/push` (a
+git-like local staging flow — `content/` is a gitignored working mirror,
+never committed to the code repo, matching standard EDS convention where
+content lives in DA, not in git).
+
+**Note:** local `npx aem up` and any current `aem.page`/`aem.live` URLs
+still serve straight from the repo's static files (verified this does not
+regress — local dev prioritizes repo files over the DA mount). Making the
+*live* site actually fetch from DA end-to-end additionally requires
+installing the AEM Code Sync GitHub App on the repo (a repo/org-level
+action outside this session's scope) — without it, `admin.hlx.page`
+preview/publish calls 404. DA itself already has and serves the real
+content today (verified via `content.da.live` + the DA admin `list` API).
+
 ## 2. API / FDM Configuration Summary
 No AEM Forms Author instance or live SOA/API Gateway was available for this
 capstone, so the two Tier‑1 APIs are mocked in `scripts/mock-api.js` using
