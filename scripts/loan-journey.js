@@ -39,10 +39,11 @@ function logJourneyEvent(name, detail = {}) {
 
 function showStep(stepId) {
   STEPS.forEach((id) => {
-    const el = document.getElementById(id);
+    const el = document.querySelector(`main > .section.${id}`);
     if (el) el.classList.toggle('active', id === stepId);
   });
-  document.getElementById(stepId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.querySelector(`main > .section.${stepId}`)
+    ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   logJourneyEvent('page_view', { step: stepId });
 }
 
@@ -231,7 +232,11 @@ async function handlePreviewSubmit(form) {
   if (response.status.responseCode === '0') {
     const ackId = response.responseString.acknowledgementId;
     setState({ ackId });
-    document.getElementById('ack-id').textContent = ackId;
+    // The "Acknowledgement ID:" paragraph is plain authored content (no
+    // custom id survives DA authoring), so it is located by its text.
+    const ackPara = [...document.querySelectorAll('main > .section.step-thankyou p')]
+      .find((p) => p.textContent.trim().startsWith('Acknowledgement ID'));
+    if (ackPara) ackPara.textContent = `Acknowledgement ID: ${ackId}`;
     logJourneyEvent('submission_success', { ackId });
     showStep('step-thankyou');
   } else {
@@ -245,7 +250,8 @@ async function handlePreviewSubmit(form) {
 // Event wiring (delegated — works regardless of fragment load timing)
 // ---------------------------------------------------------------------
 document.addEventListener('click', (e) => {
-  if (e.target.id === 'apply-now-btn') {
+  const applyLink = e.target.closest('main > .section.step-welcome a');
+  if (applyLink && applyLink.textContent.trim() === 'Apply Now') {
     e.preventDefault();
     showStep('step-login');
   } else if (e.target.id === 'send-otp') {
