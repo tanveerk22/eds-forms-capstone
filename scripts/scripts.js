@@ -1,6 +1,10 @@
 import {
   loadHeader,
   loadFooter,
+<<<<<<< HEAD
+=======
+  decorateButtons,
+>>>>>>> 0a5eac6 (chore: scaffold from aem-boilerplate-forms)
   decorateIcons,
   decorateSections,
   decorateBlocks,
@@ -71,6 +75,7 @@ function buildAutoBlocks() {
 }
 
 /**
+<<<<<<< HEAD
  * Decorates formatted links to style them as buttons.
  * @param {HTMLElement} main The main container element
  */
@@ -110,16 +115,26 @@ export function decorateButtons(main) {
 }
 
 /**
+=======
+>>>>>>> 0a5eac6 (chore: scaffold from aem-boilerplate-forms)
  * Decorates the main element.
  * @param {Element} main The main element
  */
 // eslint-disable-next-line import/prefer-default-export
 export function decorateMain(main) {
+<<<<<<< HEAD
+=======
+  // hopefully forward compatible button decoration
+  decorateButtons(main);
+>>>>>>> 0a5eac6 (chore: scaffold from aem-boilerplate-forms)
   decorateIcons(main);
   buildAutoBlocks(main);
   decorateSections(main);
   decorateBlocks(main);
+<<<<<<< HEAD
   decorateButtons(main);
+=======
+>>>>>>> 0a5eac6 (chore: scaffold from aem-boilerplate-forms)
 }
 
 /**
@@ -151,8 +166,11 @@ async function loadEager(doc) {
  * @param {Element} doc The container element
  */
 async function loadLazy(doc) {
+<<<<<<< HEAD
   loadHeader(doc.querySelector('header'));
 
+=======
+>>>>>>> 0a5eac6 (chore: scaffold from aem-boilerplate-forms)
   const main = doc.querySelector('main');
   await loadSections(main);
 
@@ -160,6 +178,10 @@ async function loadLazy(doc) {
   const element = hash ? doc.getElementById(hash.substring(1)) : false;
   if (hash && element) element.scrollIntoView();
 
+<<<<<<< HEAD
+=======
+  loadHeader(doc.querySelector('header'));
+>>>>>>> 0a5eac6 (chore: scaffold from aem-boilerplate-forms)
   loadFooter(doc.querySelector('footer'));
 
   loadCSS(`${window.hlx.codeBasePath}/styles/lazy-styles.css`);

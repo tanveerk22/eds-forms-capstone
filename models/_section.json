@@ -50,7 +50,13 @@
         "hero",
         "cards",
         "columns",
+<<<<<<< HEAD
         "fragment"
+=======
+        "fragment",
+        "form",
+        "embed-adaptive-form"
+>>>>>>> 0a5eac6 (chore: scaffold from aem-boilerplate-forms)
       ]
     }
   ]
