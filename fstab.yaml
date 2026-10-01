@@ -1,10 +1,4 @@
 mountpoints:
-  /index:
-    url: https://content.da.live/tanveerk22/eds-forms-capstone/index
-    type: markup
-  /nav:
-    url: https://content.da.live/tanveerk22/eds-forms-capstone/nav
-    type: markup
-  /footer:
-    url: https://content.da.live/tanveerk22/eds-forms-capstone/footer
+  /:
+    url: https://content.da.live/tanveerk22/eds-forms-capstone/
     type: markup
