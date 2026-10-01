@@ -20,6 +20,35 @@ Forms EDS **doc-based (sheet) Adaptive Form** engine:
 
 Run locally with `npm i && npx aem up`, then open `http://localhost:3000/`.
 
+## 1a. Document Authoring (da.live)
+All 9 content documents (the journey page, 3 fragments, header, footer, and
+the 3 doc-based sheet JSONs) are also authored/pushed as real documents in
+**Document Authoring (DA / da.live)**, browsable and editable at
+`https://da.live/#/tanveerk22/eds-forms-capstone`:
+
+```
+/index.html, /nav.html, /footer.html
+/fragments/otp-login.html, /fragments/offer-display.html, /fragments/preview.html
+/forms/otp-login.json, /forms/offer-display.json, /forms/preview.json
+```
+
+`fstab.yaml` declares the content-source mountpoint
+(`https://content.da.live/tanveerk22/eds-forms-capstone/`) that a real
+cloud-delivered EDS site would fetch this content from. These were pushed
+using the AEM CLI's DA workflow: `aem content clone/add/commit/push` (a
+git-like local staging flow — `content/` is a gitignored working mirror,
+never committed to the code repo, matching standard EDS convention where
+content lives in DA, not in git).
+
+**Note:** local `npx aem up` and any current `aem.page`/`aem.live` URLs
+still serve straight from the repo's static files (verified this does not
+regress — local dev prioritizes repo files over the DA mount). Making the
+*live* site actually fetch from DA end-to-end additionally requires
+installing the AEM Code Sync GitHub App on the repo (a repo/org-level
+action outside this session's scope) — without it, `admin.hlx.page`
+preview/publish calls 404. DA itself already has and serves the real
+content today (verified via `content.da.live` + the DA admin `list` API).
+
 ## 2. API / FDM Configuration Summary
 No AEM Forms Author instance or live SOA/API Gateway was available for this
 capstone, so the two Tier‑1 APIs are mocked in `scripts/mock-api.js` using
@@ -42,8 +71,9 @@ Visible/ReadOnly/...` mirror how a real Excel/Google Sheet is published
 through the EDS content pipeline into an Adaptive Form field definition.
 
 ## 3. EMI Calculation Explanation
-Implemented in `scripts/loan-journey.js` → `calculateEmi()`, using the
-standard reducing-balance EMI formula from the capstone spec:
+Implemented as an **authored `Value Expression` formula** on the `emi`
+field in `forms/offer-display.json` (not JavaScript), using the standard
+reducing-balance EMI formula from the capstone spec:
 
 ```
 EMI = P × r × (1 + r)ⁿ / ((1 + r)ⁿ − 1)
@@ -52,11 +82,20 @@ EMI = P × r × (1 + r)ⁿ / ((1 + r)ⁿ − 1)
   n = tenure in months
 ```
 
+Authored as (doc-based formula grammar, row numbers refer to the sheet's
+data rows for `rate-of-interest`, `loan-amount`, `tenure`):
+```
+=ROUND(F6*(F4/1200)*POWER(1+(F4/1200),F7)/(POWER(1+(F4/1200),F7)-1),0)
+```
+Evaluated by the framework's own doc-based `RuleEngine` — the same engine
+that would run against a real published spreadsheet in production.
+
 Verified against the spec's worked example: **P = ₹5,00,000, rate = 12% p.a.,
 n = 36 months → EMI = ₹16,607/month** (confirmed via automated Playwright
 test against the running app). EMI recalculates live as the customer edits
 Loan Amount / Tenure on the Offer step, bounded by the offer amount and max
-tenure (client-side validation).
+tenure (client-side validation), and also recalculates when the mocked
+API populates the initial offer.
 
 ## 4. Analytics Events List (Basic)
 Logged via `logJourneyEvent()` (console-based stub; no PII is ever logged):
@@ -76,16 +115,26 @@ Logged via `logJourneyEvent()` (console-based stub; no PII is ever logged):
 - **No AEM Forms Author / Cloud Service access** was available for this
   capstone, so field authoring uses hand-authored sheet JSON
   (`tools/gen/build-form-sheets.mjs`) instead of a real published Google
-  Sheet/Excel workbook. The JSON shape is identical to what the EDS pipeline
-  produces, so migrating to a real spreadsheet source is a content-only
-  change (no code changes required).
-- **DOB/PAN visibility toggling** is implemented in `loan-journey.js`
-  (reacting to the identifier radio group) rather than via the sheet's
-  native `Visible Expression` authoring column, because hand-computing
-  correct spreadsheet cell references without a live spreadsheet UI was
-  judged too error-prone within the capstone's time-box. In a live AEM
-  Forms Author environment this would move to the visual Rule Editor
-  (no code).
+  Sheet/Excel workbook. The JSON shape — including the `Visible Expression`
+  / `Value Expression` formula columns described below — is identical to
+  what the EDS pipeline produces, so migrating to a real spreadsheet source
+  is a content-only change (no code changes required).
+- **DOB/PAN visibility** and **EMI calculation** are both implemented as
+  genuine **authoring rules**, not JavaScript:
+  - `forms/otp-login.json` — `dob`/`pan-number` fields carry a
+    `Visible Expression` (`=F4="DOB"` / `=F4="PAN"`) that toggles based on
+    the `identifier-type` radio selection.
+  - `forms/offer-display.json` — the `emi` field carries a
+    `Value Expression` implementing the EMI formula
+    (`=ROUND(F6*(F4/1200)*POWER(1+(F4/1200),F7)/(POWER(1+(F4/1200),F7)-1),0)`),
+    evaluated by the framework's own doc-based `RuleEngine` whenever
+    `rate-of-interest`, `loan-amount`, or `tenure` change — including when
+    `scripts/loan-journey.js` populates them programmatically after the
+    mocked OTP-verify API call (it sets the value then dispatches a native
+    `change` event, exactly as a real user edit would). No EMI or
+    visibility logic lives in JavaScript. In a live AEM Forms Author
+    environment these formulas would instead be authored visually via the
+    Rule Editor — the underlying JSON contract is unchanged.
 - **OTP delivery, SMS gateway, and real KYC/eKYC/bureau calls** are
   entirely mocked — no real SMS is sent and no real bank systems are called.
 - **No server-side validation / persistence** — everything runs client-side

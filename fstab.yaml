@@ -1,0 +1,4 @@
+mountpoints:
+  /:
+    url: https://content.da.live/tanveerk22/eds-forms-capstone/
+    type: markup

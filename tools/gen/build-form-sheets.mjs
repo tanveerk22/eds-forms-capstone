@@ -80,7 +80,13 @@ writeSheet('otp-login', [
     Value: 'PAN',
   }),
   row({
-    Name: 'dob', Type: 'date', Label: 'Date of Birth', Mandatory: 'true', 'Column Span': '6',
+    Name: 'dob',
+    Type: 'date',
+    Label: 'Date of Birth',
+    Mandatory: 'true',
+    'Column Span': '6',
+    // Row 4 = the "Date of Birth" identifier-type radio option (see above).
+    'Visible Expression': '=F4="DOB"',
   }),
   row({
     Name: 'pan-number',
@@ -89,6 +95,8 @@ writeSheet('otp-login', [
     Placeholder: 'ABCDE1234F',
     Visible: 'false',
     'Column Span': '6',
+    // Row 4 = the "Date of Birth" identifier-type radio option (see above).
+    'Visible Expression': '=F4="PAN"',
   }),
   row({ Name: 'send-otp', Type: 'button', Label: 'Send OTP' }),
   row({
@@ -134,7 +142,13 @@ writeSheet('offer-display', [
     Name: 'tenure', Type: 'number', Label: 'Tenure (months)', Mandatory: 'true', Min: '6',
   }),
   row({
-    Name: 'emi', Type: 'number', Label: 'Estimated Monthly EMI (₹)', ReadOnly: 'true',
+    Name: 'emi',
+    Type: 'number',
+    Label: 'Estimated Monthly EMI (₹)',
+    ReadOnly: 'true',
+    // EMI = P x r x (1+r)^n / ((1+r)^n - 1); r = monthly rate = row4/1200.
+    // Row 4 = rate-of-interest, Row 6 = loan-amount, Row 7 = tenure.
+    'Value Expression': '=ROUND(F6*(F4/1200)*POWER(1+(F4/1200),F7)/(POWER(1+(F4/1200),F7)-1),0)',
   }),
   row({ Name: 'continue-btn', Type: 'button', Label: 'Continue to Preview' }),
 ]);
