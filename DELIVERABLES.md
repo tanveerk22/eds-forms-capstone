@@ -20,6 +20,59 @@ Forms EDS **doc-based (sheet) Adaptive Form** engine:
 
 Run locally with `npm i && npx aem up`, then open `http://localhost:3000/`.
 
+## 1a. Document Authoring (da.live)
+All 9 content documents (the journey page, 3 fragments, header, footer, and
+the 3 doc-based sheet JSONs) are authored and live in
+**Document Authoring (DA / da.live)**, browsable/editable at
+`https://da.live/#/tanveerk22/eds-forms-capstone` (edit mode:
+`https://da.live/edit#/tanveerk22/eds-forms-capstone/index`):
+
+```
+/index.html, /nav.html, /footer.html
+/fragments/otp-login.html, /fragments/offer-display.html, /fragments/preview.html
+/forms/otp-login.json, /forms/offer-display.json, /forms/preview.json
+```
+
+`fstab.yaml` declares the content-source mountpoint
+(`https://content.da.live/tanveerk22/eds-forms-capstone/`), and the
+**AEM Code Sync GitHub App** is installed on the repo, so the `eds-forms`
+branch is live end-to-end at
+`https://eds-forms--eds-forms-capstone--tanveerk22.aem.page/` — content
+served from DA, code (scripts/styles/blocks) served from GitHub.
+
+**Production-specific issues found and fixed while making the live site
+match local behaviour:**
+- `head.html` (the shared production `<head>` template) only referenced
+  `aem.js`/`scripts.js`/`styles.css` — it was missing
+  `scripts/loan-journey.js` and `styles/loan-journey.css` entirely. Locally
+  this was masked because the repo's own `index.html` carries its own
+  `<head>` and is served directly, bypassing `head.html`. **Fixed** by
+  adding both tags to `head.html`.
+- DA's content-authoring round-trip **strips arbitrary custom `id`
+  attributes** from generic content divs (only recognized block markup
+  survives). Our step-section navigation previously relied on hand-authored
+  `id="step-x"` attributes — broken in production. **Fixed** by identifying
+  each step via an authored **Section Metadata** block (`Style` =
+  `step-welcome`/`step-login`/etc.), which *does* survive the DA round-trip,
+  and updating `loan-journey.js`/`loan-journey.css` to select steps by that
+  class instead of by id. The "Apply Now" link and the "Acknowledgement ID"
+  placeholder (plain content, not form fields) are now located by text match
+  instead of a stripped id.
+- The three fragment pages (`content/fragments/*.html`) were missing the
+  standard `<body><header></header><main>...</main><footer></footer></body>`
+  wrapper (they were bare `<div>` snippets). DA's pipeline mis-parses content
+  without this wrapper and silently collapsed the `class="form"` block
+  reference down to a plain link, breaking all three embedded forms in
+  production (while working fine locally, since local dev serves the repo's
+  already-correct static `.plain.html` files directly). **Fixed** by wrapping
+  each fragment page the same way `index.html` is wrapped.
+
+All of the above were verified by running the full Tier 1 journey with
+Playwright directly against the live `aem.page` URL (not just local
+`npx aem up`, which no longer reliably predicts production behaviour for
+this project since production always resolves content from DA + `head.html`,
+regardless of matching static repo files).
+
 ## 2. API / FDM Configuration Summary
 No AEM Forms Author instance or live SOA/API Gateway was available for this
 capstone, so the two Tier‑1 APIs are mocked in `scripts/mock-api.js` using
@@ -42,8 +95,9 @@ Visible/ReadOnly/...` mirror how a real Excel/Google Sheet is published
 through the EDS content pipeline into an Adaptive Form field definition.
 
 ## 3. EMI Calculation Explanation
-Implemented in `scripts/loan-journey.js` → `calculateEmi()`, using the
-standard reducing-balance EMI formula from the capstone spec:
+Implemented as an **authored `Value Expression` formula** on the `emi`
+field in `forms/offer-display.json` (not JavaScript), using the standard
+reducing-balance EMI formula from the capstone spec:
 
 ```
 EMI = P × r × (1 + r)ⁿ / ((1 + r)ⁿ − 1)
@@ -52,11 +106,20 @@ EMI = P × r × (1 + r)ⁿ / ((1 + r)ⁿ − 1)
   n = tenure in months
 ```
 
+Authored as (doc-based formula grammar, row numbers refer to the sheet's
+data rows for `rate-of-interest`, `loan-amount`, `tenure`):
+```
+=ROUND(F6*(F4/1200)*POWER(1+(F4/1200),F7)/(POWER(1+(F4/1200),F7)-1),0)
+```
+Evaluated by the framework's own doc-based `RuleEngine` — the same engine
+that would run against a real published spreadsheet in production.
+
 Verified against the spec's worked example: **P = ₹5,00,000, rate = 12% p.a.,
 n = 36 months → EMI = ₹16,607/month** (confirmed via automated Playwright
 test against the running app). EMI recalculates live as the customer edits
 Loan Amount / Tenure on the Offer step, bounded by the offer amount and max
-tenure (client-side validation).
+tenure (client-side validation), and also recalculates when the mocked
+API populates the initial offer.
 
 ## 4. Analytics Events List (Basic)
 Logged via `logJourneyEvent()` (console-based stub; no PII is ever logged):
@@ -76,16 +139,26 @@ Logged via `logJourneyEvent()` (console-based stub; no PII is ever logged):
 - **No AEM Forms Author / Cloud Service access** was available for this
   capstone, so field authoring uses hand-authored sheet JSON
   (`tools/gen/build-form-sheets.mjs`) instead of a real published Google
-  Sheet/Excel workbook. The JSON shape is identical to what the EDS pipeline
-  produces, so migrating to a real spreadsheet source is a content-only
-  change (no code changes required).
-- **DOB/PAN visibility toggling** is implemented in `loan-journey.js`
-  (reacting to the identifier radio group) rather than via the sheet's
-  native `Visible Expression` authoring column, because hand-computing
-  correct spreadsheet cell references without a live spreadsheet UI was
-  judged too error-prone within the capstone's time-box. In a live AEM
-  Forms Author environment this would move to the visual Rule Editor
-  (no code).
+  Sheet/Excel workbook. The JSON shape — including the `Visible Expression`
+  / `Value Expression` formula columns described below — is identical to
+  what the EDS pipeline produces, so migrating to a real spreadsheet source
+  is a content-only change (no code changes required).
+- **DOB/PAN visibility** and **EMI calculation** are both implemented as
+  genuine **authoring rules**, not JavaScript:
+  - `forms/otp-login.json` — `dob`/`pan-number` fields carry a
+    `Visible Expression` (`=F4="DOB"` / `=F4="PAN"`) that toggles based on
+    the `identifier-type` radio selection.
+  - `forms/offer-display.json` — the `emi` field carries a
+    `Value Expression` implementing the EMI formula
+    (`=ROUND(F6*(F4/1200)*POWER(1+(F4/1200),F7)/(POWER(1+(F4/1200),F7)-1),0)`),
+    evaluated by the framework's own doc-based `RuleEngine` whenever
+    `rate-of-interest`, `loan-amount`, or `tenure` change — including when
+    `scripts/loan-journey.js` populates them programmatically after the
+    mocked OTP-verify API call (it sets the value then dispatches a native
+    `change` event, exactly as a real user edit would). No EMI or
+    visibility logic lives in JavaScript. In a live AEM Forms Author
+    environment these formulas would instead be authored visually via the
+    Rule Editor — the underlying JSON contract is unchanged.
 - **OTP delivery, SMS gateway, and real KYC/eKYC/bureau calls** are
   entirely mocked — no real SMS is sent and no real bank systems are called.
 - **No server-side validation / persistence** — everything runs client-side

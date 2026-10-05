@@ -15,17 +15,23 @@
 <header></header>
 <main>
   <!-- Step 0: Welcome -->
-  <div id="step-welcome" class="step-section active">
+  <div>
     <div>
       <h1>Get a Personal Loan up to ₹10,00,000</h1>
       <p>Fast, paperless and fully digital — verify your identity with OTP, check your pre-approved
         offer, calculate your EMI and apply in under 5 minutes.</p>
-      <p><a href="#" id="apply-now-btn" class="button">Apply Now</a></p>
+      <p><a href="#">Apply Now</a></p>
+    </div>
+    <div class="section-metadata">
+      <div>
+        <div>Style</div>
+        <div>step-welcome</div>
+      </div>
     </div>
   </div>
 
   <!-- Step 1: OTP Login (reusable fragment) -->
-  <div id="step-login" class="step-section">
+  <div>
     <div>
       <h2>Step 1: Verify Your Identity</h2>
     </div>
@@ -34,10 +40,16 @@
         <div><a href="/fragments/otp-login">OTP Login</a></div>
       </div>
     </div>
+    <div class="section-metadata">
+      <div>
+        <div>Style</div>
+        <div>step-login</div>
+      </div>
+    </div>
   </div>
 
   <!-- Step 2: Offer + EMI (reusable fragment) -->
-  <div id="step-offer" class="step-section">
+  <div>
     <div>
       <h2>Step 2: Your Loan Offer &amp; EMI</h2>
     </div>
@@ -46,10 +58,16 @@
         <div><a href="/fragments/offer-display">Offer Display</a></div>
       </div>
     </div>
+    <div class="section-metadata">
+      <div>
+        <div>Style</div>
+        <div>step-offer</div>
+      </div>
+    </div>
   </div>
 
   <!-- Step 3: Preview (reusable fragment) -->
-  <div id="step-preview" class="step-section">
+  <div>
     <div>
       <h2>Step 3: Preview &amp; Submit</h2>
     </div>
@@ -58,15 +76,27 @@
         <div><a href="/fragments/preview">Preview</a></div>
       </div>
     </div>
+    <div class="section-metadata">
+      <div>
+        <div>Style</div>
+        <div>step-preview</div>
+      </div>
+    </div>
   </div>
 
   <!-- Step 4: Thank you -->
-  <div id="step-thankyou" class="step-section">
+  <div>
     <div>
       <h2>Application Submitted 🎉</h2>
       <p>Thank you! Your loan application has been received.</p>
-      <p>Acknowledgement ID: <strong id="ack-id"></strong></p>
+      <p>Acknowledgement ID:</p>
       <p>Our team will contact you on your registered mobile number within 24 hours.</p>
+    </div>
+    <div class="section-metadata">
+      <div>
+        <div>Style</div>
+        <div>step-thankyou</div>
+      </div>
     </div>
   </div>
 </main>

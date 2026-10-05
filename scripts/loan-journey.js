@@ -39,10 +39,11 @@ function logJourneyEvent(name, detail = {}) {
 
 function showStep(stepId) {
   STEPS.forEach((id) => {
-    const el = document.getElementById(id);
+    const el = document.querySelector(`main > .section.${id}`);
     if (el) el.classList.toggle('active', id === stepId);
   });
-  document.getElementById(stepId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.querySelector(`main > .section.${stepId}`)
+    ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   logJourneyEvent('page_view', { step: stepId });
 }
 
@@ -64,22 +65,20 @@ function showInlineMessage(id, message, isError = true) {
 // ---------------------------------------------------------------------
 // Step 2: Offer Display + EMI Calculator (defined first — used by the
 // Step 1 OTP-verify handler once login succeeds).
+//
+// EMI is NOT computed here. It is authored declaratively as a "Value
+// Expression" formula on the `emi` field in forms/offer-display.json
+// (EMI = P x r x (1+r)^n / ((1+r)^n - 1)), evaluated by the framework's
+// doc-based RuleEngine. Because the rule engine only recomputes on native
+// `change` events, we dispatch one after each programmatic value set below
+// so the authored formula recalculates exactly as it would for a user
+// editing the field directly.
 // ---------------------------------------------------------------------
-/** EMI = P * r * (1+r)^n / ((1+r)^n - 1), where r = monthly interest rate. */
-function calculateEmi(principal, annualRatePct, tenureMonths) {
-  const r = annualRatePct / 12 / 100;
-  if (!principal || !tenureMonths || r <= 0) return 0;
-  const factor = (1 + r) ** tenureMonths;
-  return Math.round((principal * r * factor) / (factor - 1));
-}
-
-function recalculateEmi() {
-  const loanAmount = Number(document.getElementById('loan-amount')?.value || 0);
-  const tenure = Number(document.getElementById('tenure')?.value || 0);
-  const { rateOfInterest = 0 } = getState();
-  const emi = calculateEmi(loanAmount, rateOfInterest, tenure);
-  const emiField = document.getElementById('emi');
-  if (emiField) emiField.value = emi || '';
+function setAndNotify(id, value) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.value = value ?? '';
+  el.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
 function populateOfferStep() {
@@ -89,11 +88,14 @@ function populateOfferStep() {
   const set = (id, value) => { const el = document.getElementById(id); if (el) el.value = value ?? ''; };
   set('customer-name', customerName);
   set('offer-amount', offerAmount);
-  set('rate-of-interest', rateOfInterest);
   set('max-tenure', maxTenure);
-  set('loan-amount', offerAmount);
-  set('tenure', maxTenure);
-  recalculateEmi();
+  // Order matters: `emi`'s authored Value Expression depends on all three
+  // of these, and recomputes using whatever is in the rule engine's data
+  // snapshot at the time of each event — so the LAST one fired must be
+  // set only after the other two are already in place.
+  setAndNotify('rate-of-interest', rateOfInterest);
+  setAndNotify('loan-amount', offerAmount);
+  setAndNotify('tenure', maxTenure);
 }
 
 // ---------------------------------------------------------------------
@@ -120,13 +122,13 @@ function populatePreviewStep() {
 
 // ---------------------------------------------------------------------
 // Step 1: OTP Login
+//
+// DOB vs PAN field visibility is NOT toggled here. It is authored
+// declaratively as a "Visible Expression" on the `dob` / `pan-number`
+// fields in forms/otp-login.json (visible when the identifier-type radio
+// equals "DOB" / "PAN" respectively), evaluated by the framework's
+// doc-based RuleEngine on the radio group's native `change` event.
 // ---------------------------------------------------------------------
-function toggleIdentifierFields() {
-  const selected = document.querySelector('input[name="identifier-type"]:checked')?.value;
-  setFieldVisible('dob', selected !== 'PAN');
-  setFieldVisible('pan-number', selected === 'PAN');
-}
-
 async function handleSendOtp() {
   const mobileNo = document.getElementById('mobile-no')?.value?.trim();
   const identifierName = document.querySelector('input[name="identifier-type"]:checked')?.value === 'PAN' ? 'PAN_NO' : 'DOB';
@@ -230,7 +232,11 @@ async function handlePreviewSubmit(form) {
   if (response.status.responseCode === '0') {
     const ackId = response.responseString.acknowledgementId;
     setState({ ackId });
-    document.getElementById('ack-id').textContent = ackId;
+    // The "Acknowledgement ID:" paragraph is plain authored content (no
+    // custom id survives DA authoring), so it is located by its text.
+    const ackPara = [...document.querySelectorAll('main > .section.step-thankyou p')]
+      .find((p) => p.textContent.trim().startsWith('Acknowledgement ID'));
+    if (ackPara) ackPara.textContent = `Acknowledgement ID: ${ackId}`;
     logJourneyEvent('submission_success', { ackId });
     showStep('step-thankyou');
   } else {
@@ -244,7 +250,8 @@ async function handlePreviewSubmit(form) {
 // Event wiring (delegated — works regardless of fragment load timing)
 // ---------------------------------------------------------------------
 document.addEventListener('click', (e) => {
-  if (e.target.id === 'apply-now-btn') {
+  const applyLink = e.target.closest('main > .section.step-welcome a');
+  if (applyLink && applyLink.textContent.trim() === 'Apply Now') {
     e.preventDefault();
     showStep('step-login');
   } else if (e.target.id === 'send-otp') {
@@ -255,20 +262,6 @@ document.addEventListener('click', (e) => {
     handleContinueToPreview();
   } else if (e.target.id === 'back-btn') {
     showStep('step-offer');
-  }
-});
-
-document.addEventListener('change', (e) => {
-  if (e.target.name === 'identifier-type') {
-    toggleIdentifierFields();
-  } else if (e.target.id === 'loan-amount' || e.target.id === 'tenure') {
-    recalculateEmi();
-  }
-});
-
-document.addEventListener('input', (e) => {
-  if (e.target.id === 'loan-amount' || e.target.id === 'tenure') {
-    recalculateEmi();
   }
 });
 

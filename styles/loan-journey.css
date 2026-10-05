@@ -1,18 +1,26 @@
 /* Loan Journey — step visibility & layout (Tier 1 capstone) */
 
-.step-section {
+/*
+ * Step sections are identified via an authored Section Metadata block
+ * (Style = step-welcome / step-login / step-offer / step-preview /
+ * step-thankyou) rather than a hand-authored id/class, because Document
+ * Authoring (da.live) strips arbitrary custom attributes from generic
+ * content divs on its content round-trip — only recognized block markup
+ * (like Section Metadata) survives.
+ */
+main > .section[class*="step-"] {
   display: none;
   max-width: 800px;
   margin: 0 auto;
   padding: 2rem 1rem;
 }
 
-.step-section.active {
+main > .section[class*="step-"].active {
   display: block;
 }
 
-.step-section h1,
-.step-section h2 {
+main > .section[class*="step-"] h1,
+main > .section[class*="step-"] h2 {
   margin-top: 0;
 }
 
@@ -44,6 +52,6 @@
   border-bottom: 1px solid #e0e0e0;
 }
 
-#step-thankyou {
+.step-thankyou {
   text-align: center;
 }
