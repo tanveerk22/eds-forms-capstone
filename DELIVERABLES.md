@@ -22,9 +22,10 @@ Run locally with `npm i && npx aem up`, then open `http://localhost:3000/`.
 
 ## 1a. Document Authoring (da.live)
 All 9 content documents (the journey page, 3 fragments, header, footer, and
-the 3 doc-based sheet JSONs) are also authored/pushed as real documents in
-**Document Authoring (DA / da.live)**, browsable and editable at
-`https://da.live/#/tanveerk22/eds-forms-capstone`:
+the 3 doc-based sheet JSONs) are authored and live in
+**Document Authoring (DA / da.live)**, browsable/editable at
+`https://da.live/#/tanveerk22/eds-forms-capstone` (edit mode:
+`https://da.live/edit#/tanveerk22/eds-forms-capstone/index`):
 
 ```
 /index.html, /nav.html, /footer.html
@@ -33,21 +34,44 @@ the 3 doc-based sheet JSONs) are also authored/pushed as real documents in
 ```
 
 `fstab.yaml` declares the content-source mountpoint
-(`https://content.da.live/tanveerk22/eds-forms-capstone/`) that a real
-cloud-delivered EDS site would fetch this content from. These were pushed
-using the AEM CLI's DA workflow: `aem content clone/add/commit/push` (a
-git-like local staging flow — `content/` is a gitignored working mirror,
-never committed to the code repo, matching standard EDS convention where
-content lives in DA, not in git).
+(`https://content.da.live/tanveerk22/eds-forms-capstone/`), and the
+**AEM Code Sync GitHub App** is installed on the repo, so the `eds-forms`
+branch is live end-to-end at
+`https://eds-forms--eds-forms-capstone--tanveerk22.aem.page/` — content
+served from DA, code (scripts/styles/blocks) served from GitHub.
 
-**Note:** local `npx aem up` and any current `aem.page`/`aem.live` URLs
-still serve straight from the repo's static files (verified this does not
-regress — local dev prioritizes repo files over the DA mount). Making the
-*live* site actually fetch from DA end-to-end additionally requires
-installing the AEM Code Sync GitHub App on the repo (a repo/org-level
-action outside this session's scope) — without it, `admin.hlx.page`
-preview/publish calls 404. DA itself already has and serves the real
-content today (verified via `content.da.live` + the DA admin `list` API).
+**Production-specific issues found and fixed while making the live site
+match local behaviour:**
+- `head.html` (the shared production `<head>` template) only referenced
+  `aem.js`/`scripts.js`/`styles.css` — it was missing
+  `scripts/loan-journey.js` and `styles/loan-journey.css` entirely. Locally
+  this was masked because the repo's own `index.html` carries its own
+  `<head>` and is served directly, bypassing `head.html`. **Fixed** by
+  adding both tags to `head.html`.
+- DA's content-authoring round-trip **strips arbitrary custom `id`
+  attributes** from generic content divs (only recognized block markup
+  survives). Our step-section navigation previously relied on hand-authored
+  `id="step-x"` attributes — broken in production. **Fixed** by identifying
+  each step via an authored **Section Metadata** block (`Style` =
+  `step-welcome`/`step-login`/etc.), which *does* survive the DA round-trip,
+  and updating `loan-journey.js`/`loan-journey.css` to select steps by that
+  class instead of by id. The "Apply Now" link and the "Acknowledgement ID"
+  placeholder (plain content, not form fields) are now located by text match
+  instead of a stripped id.
+- The three fragment pages (`content/fragments/*.html`) were missing the
+  standard `<body><header></header><main>...</main><footer></footer></body>`
+  wrapper (they were bare `<div>` snippets). DA's pipeline mis-parses content
+  without this wrapper and silently collapsed the `class="form"` block
+  reference down to a plain link, breaking all three embedded forms in
+  production (while working fine locally, since local dev serves the repo's
+  already-correct static `.plain.html` files directly). **Fixed** by wrapping
+  each fragment page the same way `index.html` is wrapped.
+
+All of the above were verified by running the full Tier 1 journey with
+Playwright directly against the live `aem.page` URL (not just local
+`npx aem up`, which no longer reliably predicts production behaviour for
+this project since production always resolves content from DA + `head.html`,
+regardless of matching static repo files).
 
 ## 2. API / FDM Configuration Summary
 No AEM Forms Author instance or live SOA/API Gateway was available for this
