@@ -29,3 +29,5 @@ packages/aem-forms-block/*.tgz
 .hlx/.da-token.json
 
 content
+
+.hlx/.da-token*.json
