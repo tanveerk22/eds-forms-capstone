@@ -50,6 +50,14 @@ While verifying the live `aem.page` URL matched local dev behaviour, three produ
 
 All three fixes were verified by running the full Tier 1 journey with Playwright directly against the live `aem.page` URL — not just local `npx aem up`, which no longer reliably predicts production behaviour for this project once DA + Code Sync are active.
 
+## Known Limitation — `forms/*.json` not visually editable in da.live's Sheet UI
+
+Per the official [AEM EDS "Spreadsheets and JSON"](https://www.aem.live/developer/spreadsheets) doc, the recommended authoring pattern is: author data as a real spreadsheet (Excel/Google Sheet, or a da.live Sheet document), and let AEM's pipeline auto-convert it to this JSON shape on preview/publish. Our 3 `forms/*.json` files were instead generated locally (`tools/gen/build-form-sheets.mjs`) and pushed directly as final JSON via DA's [Source API](https://docs.da.live/developers/api/source) — which DA's own docs confirm is a valid, supported way to create `":type":"sheet"`-shaped JSON files (our output matches that spec exactly, including the `columns` array and `:type` marker). This was a deliberate workaround since no AEM Forms Author / published spreadsheet source was available (see `DELIVERABLES.md` §5).
+
+**Net effect:** the forms run correctly in production (verified above) and the JSON is spec-compliant, but opening `da.live/sheet#/.../forms/<name>` shows a blank grid — da.live's interactive Sheet *editor* only renders documents created through its own "+ Create > Sheet" flow (which wires up a live collaborative editing session), not arbitrary JSON pushed via the Source API. The `/config/{org}/{repo}/` 404 seen in the browser network tab is unrelated/benign — it's just an optional site-wide config document (see [Config API](https://docs.da.live/developers/api/config)) that this project never created.
+
+**To make a sheet visually editable in da.live** (not required for the forms to function, only for future spreadsheet-style editing in the UI): in da.live, use **+ Create > Sheet** in the `forms/` folder, paste in the same column headers and rows, then it can be edited live and will publish to the same `.json` path/shape our code already expects — no code changes needed either way.
+
 ## Validation
 
 - Verified end-to-end via Playwright against the **live production URL**: EMI = ₹16,607 for the ₹5L / 12% / 36-month worked example, matching spec exactly.
